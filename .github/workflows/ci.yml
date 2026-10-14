@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    name: API (Spring Boot)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Each step below is skipped until the api/ folder exists, so the workflow stays green before Wednesday.
+      - name: Set up Java 21
+        if: hashFiles('api/pom.xml') != ''
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: api/pom.xml
+
+      - name: Build and run tests
+        if: hashFiles('api/pom.xml') != ''
+        working-directory: api
+        run: sh ./mvnw -B verify
+
+  ui:
+    name: UI (React)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Skipped until the ui/ folder exists (Friday).
+      - name: Set up Node 24
+        if: hashFiles('ui/package-lock.json') != ''
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install
+        if: hashFiles('ui/package-lock.json') != ''
+        working-directory: ui
+        run: npm ci
+
+      - name: Run tests
+        if: hashFiles('ui/package-lock.json') != ''
+        working-directory: ui
+        run: npm run test --if-present
+
+      - name: Build
+        if: hashFiles('ui/package-lock.json') != ''
+        working-directory: ui
+        run: npm run build
